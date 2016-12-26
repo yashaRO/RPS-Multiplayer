@@ -9,14 +9,13 @@ firebase.initializeApp(config);
 
 var database = firebase.database()
 var auth = firebase.auth()
-var uid
-var name = prompt('What is your name?')
-var yourData
-var yourDataRef
-var players, player1, player2, snaps
+var yourDataKey
 
 $(document).ready(function() {
-	//window.location.replace("http://stackoverflow.com")
+	
+	var playerNum = 1
+	var enemyNum = 2
+	var name = prompt('What is your name?')
 	
 	firebase.auth().signInAnonymously().catch(function(error) {
 		// Handle Errors here.
@@ -28,7 +27,6 @@ $(document).ready(function() {
         if (user) {
             // User is signed in.
             var isAnonymous = user.isAnonymous;
-            uid = user.uid;
         } else {
             console.log('No User')
             // User is signed out.
@@ -39,27 +37,57 @@ $(document).ready(function() {
 	database.ref('.info/connected').on('value', function(snap) {
         if (snap.val()) {
 			database.ref('connections').push(true).onDisconnect().remove()
-			yourData = database.ref('players').push({
-				name:name,
-				selection:'',
-				uid:uid
+			database.ref('connections').once('value', function(snapshot) {
+				if (snapshot.numChildren() >= 3) {
+					alert('Server full'); 
+					window.location.assign('https://google.com')
+				}
 			})
-            yourDataRef = yourData.toString().substr(35)
-			yourData.onDisconnect().remove()
+			database.ref().once('value', function(snapshot) {
+				if (snapshot.hasChild('player1')) {
+					playerNum = 2
+					enemyNum = 1
+				}
+				$('h2').prop('id', 'player' + playerNum)
+				database.ref('submitted/player' + playerNum).onDisconnect().set(false)
+				$('#p' + playerNum + 'name').html(name)
+				var yourData = database.ref('player' + playerNum).push({
+					name:name,
+					player:playerNum,
+					wins:0
+				})
+				//No idea why this was so important but keeping it just in case.
+				yourDataKey = yourData.key
+				// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+				yourData.onDisconnect().remove()
+			})
         }
 	})
-	database.ref(yourDataRef + '/selection').on('value', function(data) {
-		//console.log(yourData.child('selection').exists())
-		//console.log(data.child('selection').exists())
-        console.log(data.val())       
-        console.log(data)       
-        yourObj = data.val()
-        //$('#p1pick').html()
+	
+	database.ref('submitted').on('value', function(snap){
+		if (snap.child('player1').val() && snap.child('player2').val()) {
+			$('h2').html('Player1 picked: ' + snap.child('player1').val() + '<br>Player2 picked: ' + snap.child('player2').val())
+			$('input').prop('disabled', false)
+		} else {
+			snap.forEach(function(childSnap) {
+				if (childSnap.val()) {
+					$('#' + childSnap.key).html('Waiting for your opponent!')
+				}
+			})
+		}
 	})
+	
 	$('input').click(function() {
-		yourData.update({
-			selection:this.id
-		})
+		$('button').prop('disabled', false)
+		$('#p'+ playerNum + 'pick').html(this.id)
+	})
+	$('button').click(function() {
+		var updates = {}
+		updates['submitted/player' + playerNum] = $('#p' + playerNum + 'pick').html()
+		database.ref().update(updates)
+		$(this).prop('disabled', true)
+		$('input').prop('disabled', true)
 	})
 })
+
 

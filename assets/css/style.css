@@ -3,7 +3,7 @@ img {
 	width: 375px;
 	border: 1px solid black;
 }
-.col-lg-5 {
+.players {
 	margin-top: 20px;
 	text-align: center;
 	font-size: 50px;
@@ -11,4 +11,7 @@ img {
 }
 input {
 	display:none;
+}
+button {
+	font-size: 20px;
 }
