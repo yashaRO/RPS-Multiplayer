@@ -13,9 +13,9 @@ var auth = firebase.auth()
 $(document).ready(function() {
 	
 	var playerNum = 1
-	var enemyNum = 2
 	var name = prompt('What is your name?')
-	var score = 0
+	//To make sure user has a spot before firebase calls rest of data.
+	var checkedIn = false
 	
 	firebase.auth().signInAnonymously().catch(function(error) {
 		// Handle Errors here.
@@ -37,9 +37,12 @@ $(document).ready(function() {
 	database.ref('.info/connected').on('value', function(snap) {
         if (snap.val()) {
 			database.ref('connections').once('value', function(snapshot) {
-				if (snapshot.numChildren() >= 3) {
+				if (snapshot.hasChild('player1') && snapshot.hasChild('player2')) {
 					alert('Server full'); 
 					window.location.assign('https://google.com')
+					return true
+				} else {
+					checkedIn = true;
 				}
 				if (snapshot.hasChild('player1')) {
 					playerNum = 2
@@ -59,6 +62,7 @@ $(document).ready(function() {
 	
 	database.ref('players').on('value', function(snap){
 		
+		if (!checkedIn) {return true}
 		var player1 = snap.child('player1/name').val()
 		var player2 = snap.child('player2/name').val()
 		var p1selection = snap.child('player1/selection').val()
@@ -107,11 +111,11 @@ $(document).ready(function() {
 
 		if (p1selection && p2selection) {
 			
-			var seconds = 3
-			$('button').html(seconds)
+			$('button').html(seconds = 3)			
 			var nextRoundTimer = setInterval(function() {
 				$('button').html(--seconds)
 			}, 1000)
+			
 			var nextRound = setTimeout(function() {
 				$('.player' + playerNum).prop('disabled',false)
 				database.ref('players/player' + playerNum + '/selection').set(false)
@@ -119,8 +123,11 @@ $(document).ready(function() {
 				$('#p1pick').empty()
 				$('#p2pick').empty()
 				$('button').html('Go!')
-				database.ref('players/player' + whoWon).update({score:snap.child('player' + whoWon + '/score').val() + 1})
+				if (whoWon) {
+					database.ref('players/player' + whoWon).update({score:snap.child('player' + whoWon + '/score').val() + 1})
+				}
 			}, 3000)
+			
 			$('h2').html(RPS(p1selection + p2selection, player1, player2))
 			$('#p1pick').html(p1selection)
 			$('#p2pick').html(p2selection)	
@@ -157,5 +164,3 @@ $(document).ready(function() {
 		$('.player' + playerNum).prop('disabled', true)
 	})
 })
-
-
