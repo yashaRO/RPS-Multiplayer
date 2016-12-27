@@ -75,6 +75,38 @@ $(document).ready(function() {
 		var player2 = snap.child('player2/name').val() || 'Player 2'
 		var p1selection = snap.child('player1/selection').val()
 		var p2selection = snap.child('player2/selection').val()
+		//Testing out game logic. Used different naming for players to avoid confusion
+		function RPS(selections, firstPlayer, secondPlayer) {
+			var winner
+			switch (selections) {
+				case 'PaperRock':
+					winner = firstPlayer
+					break;
+				case 'PaperScissors':
+					winner = secondPlayer
+					break;					
+				case 'RockScissors':
+					winner = firstPlayer
+					break;					
+				case 'RockPaper':
+					winner = secondPlayer
+					break;					
+				case 'ScissorsRock':
+					winner = secondPlayer
+					break;					
+				case 'ScissorsPaper':
+					winner = firstPlayer
+					break;
+				case 'PaperPaper':
+				case 'ScissorsScissors':
+				case 'RockRock':
+					return 'Tie!'
+					break;
+			}
+			var winMessage = `And the winner is ${winner}`
+			return winMessage
+		}
+		//End testing
 		$('#p1name').html(player1)
 		$('#p2name').html(player2)
 
@@ -89,10 +121,13 @@ $(document).ready(function() {
 				$('.player' + playerNum).prop('disabled',false)
 				database.ref('submitted/player' + playerNum + '/selection').set(false)
 				clearInterval(nextRoundTimer)
+				$('#p1pick').empty()
+				$('#p2pick').empty()
 				$('button').html('Go!')
 			}, 3000)
-			$('h2').html(player1 + ': ' + p1selection + '<br>' + player2 + ': ' + p2selection)
-			$('#p' + playerNum + 'pick').empty()
+			$('h2').html(RPS(p1selection + p2selection, player1, player2))
+			$('#p1pick').html(p1selection)
+			$('#p2pick').html(p2selection)			
 		} else {
 			snap.forEach(function(childSnap) {
 				
@@ -102,7 +137,6 @@ $(document).ready(function() {
 					if (childSnap.key == 'player1') {
 						$('#player2').html('Waiting on you, bud!')
 					} else {
-						console.log('some error here')
 						$('#player1').html('Waiting on you, bud!')
 					}
 					return true
