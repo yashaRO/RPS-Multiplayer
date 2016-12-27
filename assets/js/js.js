@@ -48,7 +48,11 @@ $(document).ready(function() {
 					playerNum = 2
 					enemyNum = 1
 				}
+				if (snapshot.numChildren) {
+					
+				}
 				$('h2').prop('id', 'player' + playerNum)
+				$('input').prop('class', 'player' + playerNum)
 				database.ref('submitted/player' + playerNum).onDisconnect().set(false)
 				$('#p' + playerNum + 'name').html(name)
 				var yourData = database.ref('player' + playerNum).push({
@@ -56,6 +60,7 @@ $(document).ready(function() {
 					player:playerNum,
 					wins:0
 				})
+				database.ref('submitted/player' + playerNum + '/name').set(name)
 				//No idea why this was so important but keeping it just in case.
 				yourDataKey = yourData.key
 				// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -65,28 +70,47 @@ $(document).ready(function() {
 	})
 	
 	database.ref('submitted').on('value', function(snap){
-		if (snap.child('player1').val() && snap.child('player2').val()) {
-			$('h2').html('Player1 picked: ' + snap.child('player1').val() + '<br>Player2 picked: ' + snap.child('player2').val())
-			$('input').prop('disabled', false)
+		if (snap.child('player1/selection').val() && snap.child('player2/selection').val()) {
+			$('h2').html(snap.child('player1/name').val() + ': ' + snap.child('player1/selection').val() + '<br>' + snap.child('player2/name').val() + ': ' + snap.child('player2/selection').val())
+			$('#p' + playerNum + 'pick').empty()
+			$('button').html('Next')
+			$('button').prop('disabled', false)
+			$('.player' + playerNum).prop('disabled', true)
+			console.log(snap.child('player2/name').val())
 		} else {
 			snap.forEach(function(childSnap) {
-				if (childSnap.val()) {
+				if (childSnap.val().selection) {
 					$('#' + childSnap.key).html('Waiting for your opponent!')
+					$('.' + childSnap.key).prop('disabled', true)
+				} else {
+					$('#' + childSnap.key).html('Pick your weapon!')
 				}
 			})
 		}
 	})
 	
+	database.ref('submitted/player1/name').on('value', function(snap) {
+		$('#p1name').html(snap.val() || 'Player 1')
+	})
+	
+	database.ref('submitted/player2/name').on('value', function(snap) {
+		$('#p2name').html(snap.val() || 'Player 2')
+	})
+	
 	$('input').click(function() {
 		$('button').prop('disabled', false)
-		$('#p'+ playerNum + 'pick').html(this.id)
+		$('#p' + playerNum + 'pick').html(this.id)
 	})
 	$('button').click(function() {
+		if ($(this).html() == 'Next') {
+			$('.player' + playerNum).prop('disabled',false)
+			database.ref('submitted/player' + playerNum + '/selection').set(false)
+			$(this).html('Go!')
+			return true;
+		}
 		var updates = {}
-		updates['submitted/player' + playerNum] = $('#p' + playerNum + 'pick').html()
+		updates['submitted/player' + playerNum + '/selection'] = $('#p' + playerNum + 'pick').html()
 		database.ref().update(updates)
-		$(this).prop('disabled', true)
-		$('input').prop('disabled', true)
 	})
 })
 
